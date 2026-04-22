@@ -1,0 +1,729 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ia-blue:#1a3d7c;--ia-blue2:#0f2d5e;--ia-blue-light:#2a5298;
+  --ia-blue-dim:rgba(26,61,124,0.12);
+  --ia-green:#3a9e3f;--ia-green2:#2d8032;--ia-green-dim:rgba(58,158,63,0.12);
+  --ia-orange:#f5a623;--ia-orange2:#e09010;--ia-orange-dim:rgba(245,166,35,0.12);
+  --bg:#f0f4fa;--surface:#ffffff;--surface2:#f5f7fc;--surface3:#eef1f8;
+  --border:#d4dce8;--border2:#b8c6d8;--text:#0f1f3d;--text2:#3a4d6a;--text3:#7a8da8;
+  --danger:#e03a3a;--danger-dim:rgba(224,58,58,.1);
+  --r:10px;--r2:14px;--r3:18px;
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+  --shadow:0 2px 12px rgba(26,61,124,.1);--shadow2:0 4px 24px rgba(26,61,124,.15);
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:13px;-webkit-font-smoothing:antialiased}
+button{font-family:var(--font);cursor:pointer;border:none;outline:none}
+input,select,textarea{font-family:var(--font);outline:none}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── LOGIN — no vh, natural flow ── */
+#screen-login{background:linear-gradient(135deg,#0f2d5e 0%,#1a3d7c 50%,#2a5298 100%);padding:32px 16px;display:flex;align-items:flex-start;justify-content:center}
+.login-pattern{position:fixed;inset:0;background-image:radial-gradient(circle,rgba(255,255,255,.05) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0}
+.login-glow{position:fixed;bottom:-80px;right:-60px;width:300px;height:300px;background:radial-gradient(circle,rgba(245,166,35,.15),transparent 65%);pointer-events:none;z-index:0}
+.login-card{background:#fff;border-radius:var(--r3);padding:28px 32px;width:100%;max-width:400px;position:relative;z-index:1;box-shadow:0 16px 48px rgba(0,0,0,.25)}
+.brand-wrap{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--border)}
+.brand-icon{width:42px;height:42px;background:linear-gradient(135deg,var(--ia-blue),var(--ia-green));border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px}
+.brand-name{font-size:20px;font-weight:700;color:var(--ia-blue)}
+.brand-name span{color:var(--ia-green)}
+.brand-tag{font-size:10px;color:var(--text3);letter-spacing:.06em}
+.login-h{font-size:17px;font-weight:600;color:var(--ia-blue);margin-bottom:3px;text-align:center}
+.login-sub{font-size:11px;color:var(--text3);margin-bottom:18px;text-align:center}
+.demo-hint{background:var(--ia-blue-dim);border:1px solid rgba(26,61,124,.15);border-radius:8px;padding:9px 11px;margin-bottom:13px;font-size:11px;color:var(--text2)}
+.demo-hint strong{color:var(--ia-blue);font-weight:600}
+.sec-lbl{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:13px}
+.role-opt{padding:9px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface2);color:var(--text2);font-size:12px;font-weight:500;text-align:center;cursor:pointer;transition:all .2s}
+.role-opt.active{border-color:var(--ia-blue);background:var(--ia-blue-dim);color:var(--ia-blue)}
+.fld{margin-bottom:12px}
+.fld label{display:block;font-size:10px;font-weight:600;color:var(--text3);margin-bottom:4px;letter-spacing:.06em;text-transform:uppercase}
+.fld input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r);padding:9px 12px;color:var(--text);font-size:13px;transition:border-color .2s}
+.fld input:focus{border-color:var(--ia-blue);background:#fff}
+.fld input::placeholder{color:var(--text3)}
+.login-btn{width:100%;padding:11px;background:linear-gradient(135deg,var(--ia-blue),var(--ia-blue-light));border-radius:var(--r);color:#fff;font-size:13px;font-weight:600;transition:all .2s;margin-bottom:10px;box-shadow:0 3px 12px rgba(26,61,124,.3)}
+.login-btn:hover{transform:translateY(-1px)}
+.login-note{font-size:10px;color:var(--text3);text-align:center}
+.login-note span{color:var(--ia-blue);font-weight:500}
+
+/* ── APP ── */
+#screen-app{display:none;flex-direction:column}
+.topnav{background:linear-gradient(135deg,var(--ia-blue2),var(--ia-blue));padding:0 16px;height:50px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,.2)}
+.nav-brand{display:flex;align-items:center;gap:8px}
+.nav-icon{width:28px;height:28px;background:rgba(255,255,255,.15);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;border:1px solid rgba(255,255,255,.2)}
+.nav-brand-txt{font-size:14px;font-weight:700;color:#fff}
+.nav-brand-txt span{color:#7ddb82}
+.nav-brand-sub{font-size:9px;color:rgba(255,255,255,.45);letter-spacing:.05em}
+.nsep{width:1px;height:18px;background:rgba(255,255,255,.2)}
+.nav-badge{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
+.nb-tc{background:rgba(58,158,63,.25);color:#7ddb82;border:1px solid rgba(58,158,63,.4)}
+.nb-ad{background:rgba(245,166,35,.2);color:#ffc85a;border:1px solid rgba(245,166,35,.35)}
+.ntabs{display:flex;gap:2px}
+.ntab{padding:5px 10px;border-radius:6px;font-size:11px;font-weight:500;color:rgba(255,255,255,.6);background:transparent;border:none;cursor:pointer;transition:all .15s}
+.ntab:hover{background:rgba(255,255,255,.1);color:#fff}
+.ntab.active{background:rgba(255,255,255,.15);color:#fff}
+.nav-r{display:flex;align-items:center;gap:7px}
+.nav-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700}
+.nav-tc-av{background:var(--ia-green-dim);border:1.5px solid var(--ia-green);color:var(--ia-green)}
+.nav-ad-av{background:var(--ia-orange-dim);border:1.5px solid var(--ia-orange);color:var(--ia-orange)}
+.sess-tmr{font-size:10px;font-family:var(--mono);background:rgba(245,166,35,.2);color:#ffc85a;padding:2px 7px;border-radius:5px;border:1px solid rgba(245,166,35,.3)}
+.nav-uname{font-size:11px;color:rgba(255,255,255,.8)}
+.signout-btn{padding:4px 9px;border-radius:7px;border:1px solid rgba(255,255,255,.2);background:transparent;color:rgba(255,255,255,.7);font-size:11px;transition:all .2s;cursor:pointer}
+.signout-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#3ecf8e;display:inline-block;margin-right:3px;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.wm-bar{background:rgba(26,61,124,.06);border-bottom:1px solid rgba(26,61,124,.1);padding:3px 16px;display:flex;justify-content:space-between}
+.wm-txt{font-size:10px;color:var(--ia-blue);font-family:var(--mono);opacity:.7}
+
+/* PANELS */
+.panel{padding:14px;display:flex;flex-direction:column;gap:12px}
+.panel.hidden{display:none!important}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:14px;box-shadow:var(--shadow)}
+.card-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:8px}
+.card-title{font-size:12px;font-weight:600;color:var(--ia-blue)}
+.card-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.sec-title{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;margin-bottom:10px}
+
+/* TELECALLER LAYOUT */
+.tc-body{display:flex}
+.tc-sidebar{width:235px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;min-height:500px}
+.sb-top{padding:10px}
+.sb-search{position:relative}
+.sb-search input{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px 7px 28px;font-size:11px;color:var(--text)}
+.sb-search input:focus{border-color:var(--ia-blue)}
+.sb-search input::placeholder{color:var(--text3)}
+.sb-si{position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--text3)}
+.sb-filters{display:flex;gap:3px;padding:4px 10px 7px;flex-wrap:wrap}
+.sf{padding:3px 8px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-weight:500;transition:all .15s}
+.sf.active{background:var(--ia-blue-dim);border-color:var(--ia-blue);color:var(--ia-blue)}
+.sb-stats{display:flex;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--ia-blue-dim)}
+.sb-st{flex:1;padding:7px 4px;text-align:center;border-right:1px solid var(--border)}
+.sb-st:last-child{border-right:none}
+.sb-sv{font-size:15px;font-weight:700;color:var(--ia-blue)}
+.sb-sl{font-size:9px;color:var(--text3);margin-top:1px;font-weight:500}
+.leads-list{flex:1;overflow-y:auto;max-height:420px;padding:4px 0}
+.lead-card{padding:9px 11px;cursor:pointer;border-left:3px solid transparent;transition:all .15s}
+.lead-card:hover{background:var(--surface2)}
+.lead-card.active{background:var(--ia-blue-dim);border-left-color:var(--ia-blue)}
+.lc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+.lc-name{font-size:12px;font-weight:600;color:var(--text)}
+.lc-st{font-size:9px;font-weight:600;padding:2px 5px;border-radius:3px}
+.s-new{background:var(--ia-blue-dim);color:var(--ia-blue)}
+.s-cb{background:var(--ia-orange-dim);color:var(--ia-orange2)}
+.s-mtg{background:var(--ia-green-dim);color:var(--ia-green)}
+.s-ni{background:var(--surface3);color:var(--text3);border:1px solid var(--border)}
+.s-nr{background:var(--danger-dim);color:var(--danger)}
+.s-ct{background:rgba(26,61,124,.08);color:var(--ia-blue-light)}
+.lc-co{font-size:10px;color:var(--text3)}
+.lc-meta{font-size:9px;color:var(--text3);margin-top:2px;display:flex;align-items:center;gap:4px}
+.lc-dot{width:5px;height:5px;border-radius:50%;display:inline-block}
+.etag{font-size:8px;background:var(--ia-green-dim);color:var(--ia-green);padding:1px 4px;border-radius:3px;border:1px solid rgba(58,158,63,.2);font-weight:600}
+.tc-main{flex:1;padding:14px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
+.tc-act{width:205px;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0}
+.ac-hdr{padding:9px 11px;border-bottom:1px solid var(--border);font-size:10px;font-weight:700;color:var(--ia-blue);display:flex;align-items:center;justify-content:space-between;background:var(--ia-blue-dim)}
+.ac-cnt{font-size:9px;background:var(--ia-blue);color:#fff;border-radius:10px;padding:1px 6px;font-weight:600}
+.ac-list{flex:1;overflow-y:auto;max-height:420px;padding:4px 0}
+.ac-item{padding:7px 11px;border-bottom:1px solid var(--border)}
+.ac-item:last-child{border-bottom:none}
+.ac-act{font-size:10px;font-weight:600}
+.ac-det{font-size:9px;color:var(--text3);margin-top:1px;line-height:1.4;word-break:break-word}
+.ac-time{font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:1px}
+
+/* CUSTOMER CARD */
+.dc-hdr{display:flex;align-items:flex-start;gap:11px;margin-bottom:12px}
+.dc-av{width:44px;height:44px;border-radius:50%;background:var(--ia-blue-dim);border:2px solid var(--ia-blue);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--ia-blue);flex-shrink:0}
+.dc-name{font-size:15px;font-weight:700;color:var(--ia-blue);letter-spacing:-.2px;margin-bottom:2px}
+.dc-role{font-size:11px;color:var(--text2)}
+.pri-badge{display:inline-block;font-size:9px;font-weight:600;padding:2px 7px;border-radius:20px;margin-top:3px}
+.email-flag{display:inline-flex;align-items:center;gap:4px;font-size:10px;background:var(--ia-green-dim);color:var(--ia-green);padding:2px 8px;border-radius:5px;border:1px solid rgba(58,158,63,.2);margin-left:5px;font-weight:600}
+.phone-card{background:linear-gradient(135deg,var(--ia-blue-dim),rgba(26,61,124,.04));border:1.5px solid rgba(26,61,124,.2);border-radius:11px;padding:12px 14px;margin-bottom:11px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.phone-lbl{font-size:9px;font-weight:700;color:var(--ia-blue);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px;opacity:.7}
+.phone-num{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--ia-blue);letter-spacing:.04em;user-select:none;-webkit-user-select:none}
+.audit-pill{display:inline-flex;align-items:center;gap:4px;font-size:9px;background:var(--ia-orange-dim);color:var(--ia-orange2);padding:3px 8px;border-radius:20px;border:1px solid rgba(245,166,35,.25);flex-shrink:0;font-weight:600}
+.audit-blink{width:5px;height:5px;border-radius:50%;background:var(--ia-orange);animation:blink 2s infinite}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.df{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 10px}
+.df-lbl{font-size:9px;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px;font-weight:500}
+.df-val{font-size:12px;font-weight:600;color:var(--text);user-select:none;-webkit-user-select:none}
+
+/* OUTCOME */
+.outcome-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.ob{padding:8px 3px;border-radius:var(--r);border:1.5px solid var(--border);background:var(--surface2);cursor:pointer;text-align:center;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:3px}
+.ob:hover{border-color:var(--ia-blue);background:var(--ia-blue-dim);transform:translateY(-1px)}
+.ob-ic{font-size:16px;line-height:1}
+.ob-lb{font-size:9px;font-weight:600;color:var(--text2)}
+.ob.sel-connected{border-color:var(--ia-green);background:var(--ia-green-dim)}.ob.sel-connected .ob-lb{color:var(--ia-green)}
+.ob.sel-noreply{border-color:var(--danger);background:var(--danger-dim)}.ob.sel-noreply .ob-lb{color:var(--danger)}
+.ob.sel-callback{border-color:var(--ia-orange);background:var(--ia-orange-dim)}.ob.sel-callback .ob-lb{color:var(--ia-orange2)}
+.ob.sel-meeting{border-color:var(--ia-blue);background:var(--ia-blue-dim)}.ob.sel-meeting .ob-lb{color:var(--ia-blue)}
+.ob.sel-notint{border-color:var(--border2);background:var(--surface3)}.ob.sel-notint .ob-lb{color:var(--text3)}
+
+/* MEETING */
+.mtg-panel{background:var(--ia-blue-dim);border:1.5px solid rgba(26,61,124,.2);border-radius:var(--r);padding:11px;display:none}
+.mtg-panel.show{display:block}
+.mp-row{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;align-items:center}
+.mp-sel,.mp-inp{background:#fff;border:1.5px solid var(--border);border-radius:7px;padding:6px 9px;font-size:11px;color:var(--text)}
+.mtg-btn{padding:6px 12px;background:var(--ia-blue);border-radius:7px;color:#fff;font-size:11px;font-weight:600;cursor:pointer}
+.mtg-btn:hover{background:var(--ia-blue-light)}
+
+/* NOTES */
+.notes-ta{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:var(--r);padding:10px;font-size:12px;color:var(--text);resize:none;height:70px;transition:border-color .2s;line-height:1.5}
+.notes-ta:focus{border-color:var(--ia-blue);background:#fff}
+.notes-ta::placeholder{color:var(--text3)}
+.notes-ta.error{border-color:var(--danger)}
+.notes-ft{display:flex;align-items:center;justify-content:space-between;margin-top:3px}
+.notes-req{font-size:10px;color:var(--danger);display:none}
+.notes-ctr{font-size:10px;color:var(--text3)}
+.bottom-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:10px}
+.fu-wrap{display:flex;align-items:center;gap:6px;flex:1}
+.fu-lbl{font-size:11px;color:var(--text2);white-space:nowrap;font-weight:500}
+.fu-inp{background:var(--surface2);border:1.5px solid var(--border);border-radius:7px;padding:6px 9px;font-size:11px;color:var(--text)}
+.save-btn{padding:8px 17px;border-radius:var(--r);background:linear-gradient(135deg,var(--ia-blue),var(--ia-blue-light));color:#fff;font-size:12px;font-weight:700;transition:all .2s;box-shadow:0 2px 8px rgba(26,61,124,.22);cursor:pointer}
+.save-btn:hover{transform:translateY(-1px)}
+.save-btn.saved{background:linear-gradient(135deg,var(--ia-green),var(--ia-green2))}
+
+/* AI */
+.ai-panel{background:var(--surface);border:1.5px solid rgba(26,61,124,.15);border-radius:var(--r2);overflow:hidden;box-shadow:var(--shadow)}
+.ai-hdr{padding:9px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,var(--ia-blue-dim),rgba(58,158,63,.05))}
+.ai-pulse{width:6px;height:6px;border-radius:50%;background:var(--ia-green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.ai-title{font-size:11px;font-weight:700;color:var(--ia-blue)}
+.ai-sub{font-size:9px;color:var(--text3)}
+.ai-tog{font-size:10px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:2px 7px;cursor:pointer}
+.ai-body{padding:10px 12px;max-height:150px;overflow-y:auto}
+.ai-msg{display:flex;gap:6px;margin-bottom:8px}
+.ai-msg:last-child{margin-bottom:0}
+.ai-ic{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:9px;flex-shrink:0;margin-top:1px;font-weight:700}
+.ai-a .ai-ic{background:var(--ia-blue-dim);color:var(--ia-blue)}
+.ai-u .ai-ic{background:var(--ia-green-dim);color:var(--ia-green)}
+.ai-txt{font-size:11px;color:var(--text2);line-height:1.5;flex:1}
+.ai-txt strong{color:var(--ia-blue);font-weight:600}
+.ai-load{display:flex;gap:3px;align-items:center;padding:3px 0}
+.ai-d{width:4px;height:4px;border-radius:50%;background:var(--ia-blue);animation:bounce 1.2s infinite}
+.ai-d:nth-child(2){animation-delay:.2s}.ai-d:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+.ai-chips{display:flex;gap:5px;flex-wrap:wrap;padding:5px 12px;border-top:1px solid var(--border);background:var(--surface2)}
+.ai-chip{font-size:9px;padding:3px 7px;border-radius:20px;border:1.5px solid rgba(26,61,124,.2);background:var(--ia-blue-dim);color:var(--ia-blue);cursor:pointer;font-weight:500}
+.ai-footer{padding:7px 12px;border-top:1px solid var(--border);display:flex;gap:6px}
+.ai-inp{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;font-size:11px;color:var(--text)}
+.ai-inp:focus{border-color:var(--ia-blue);background:#fff}
+.ai-send{padding:6px 10px;background:var(--ia-blue);border-radius:7px;color:#fff;font-size:11px;font-weight:600;cursor:pointer}
+
+/* ADMIN KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:12px 14px;position:relative;overflow:hidden;box-shadow:var(--shadow);cursor:pointer;transition:all .2s}
+.kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow2)}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:100%;height:3px;border-radius:var(--r2) var(--r2) 0 0}
+.kpi.c-b::before{background:linear-gradient(90deg,var(--ia-blue),var(--ia-blue-light))}
+.kpi.c-g::before{background:linear-gradient(90deg,var(--ia-green),#5ec462)}
+.kpi.c-a::before{background:linear-gradient(90deg,var(--ia-orange),#ffc344)}
+.kpi.c-r::before{background:linear-gradient(90deg,var(--danger),#f07070)}
+.kpi-lbl{font-size:10px;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:5px;font-weight:600}
+.kpi-val{font-size:24px;font-weight:700;letter-spacing:-.5px;line-height:1;color:var(--ia-blue)}
+.kpi-sub{font-size:10px;margin-top:4px;font-weight:500}
+.up{color:var(--ia-green)}.dn{color:var(--danger)}.nt{color:var(--text3)}
+.spark{position:absolute;bottom:0;right:0;width:55px;height:24px;opacity:.25}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.fn-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.fn-row:last-child{margin-bottom:0}
+.fn-lbl{font-size:10px;color:var(--text2);width:95px;flex-shrink:0;text-align:right;font-weight:500}
+.fn-track{flex:1;background:var(--surface2);border-radius:3px;height:18px;overflow:hidden;border:1px solid var(--border)}
+.fn-fill{height:100%;border-radius:3px;display:flex;align-items:center;padding:0 6px}
+.fn-num{font-size:9px;font-weight:700}
+.fn-pct{font-size:9px;width:28px;text-align:right;flex-shrink:0;font-weight:600}
+.donut-wrap{display:flex;align-items:center;gap:12px}
+.dl{display:flex;align-items:center;gap:5px;margin-bottom:5px}
+.dl:last-child{margin-bottom:0}
+.dl-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0}
+.dl-lbl{font-size:11px;color:var(--text2);flex:1;font-weight:500}
+.dl-v{font-size:11px;font-weight:700;font-family:var(--mono);color:var(--text)}
+.dl-p{font-size:9px;color:var(--text3);font-family:var(--mono);width:24px;text-align:right}
+.perf-row{display:flex;align-items:center;gap:7px;margin-bottom:9px}
+.perf-row:last-child{margin-bottom:0}
+.pav{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.pinfo{flex:1;min-width:0}
+.pname{font-size:11px;font-weight:600;margin-bottom:2px;color:var(--text)}
+.ptrack{background:var(--surface2);border-radius:3px;height:5px;overflow:hidden;border:1px solid var(--border)}
+.pbar{height:100%;border-radius:3px}
+.pstats{display:flex;gap:7px;flex-shrink:0}
+.ps{display:flex;flex-direction:column;align-items:flex-end}
+.psv{font-size:12px;font-weight:700;font-family:var(--mono);line-height:1}
+.psl{font-size:9px;color:var(--text3);font-weight:500}
+.int-row{margin-bottom:8px}.int-row:last-child{margin-bottom:0}
+.int-top{display:flex;justify-content:space-between;margin-bottom:3px}
+.int-lbl{font-size:11px;color:var(--text2);font-weight:500}
+.int-val{font-size:10px;font-weight:700;font-family:var(--mono)}
+.int-track{background:var(--surface2);border-radius:3px;height:5px;overflow:hidden;border:1px solid var(--border)}
+.int-fill{height:100%;border-radius:3px}
+.tbl-wrap{overflow-x:auto}
+.tbl-filters{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:9px}
+.tf{padding:3px 8px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text3);font-size:10px;cursor:pointer;font-weight:500;transition:all .15s}
+.tf.active{background:var(--ia-blue-dim);border-color:var(--ia-blue);color:var(--ia-blue)}
+table{width:100%;border-collapse:collapse;font-size:11px;min-width:700px}
+th{text-align:left;padding:6px 9px;color:var(--ia-blue);font-weight:700;border-bottom:2px solid var(--ia-blue-dim);font-size:10px;background:var(--ia-blue-dim);white-space:nowrap}
+td{padding:7px 9px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+.sp{padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;white-space:nowrap}
+.tbl-btn{padding:2px 7px;border-radius:5px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-size:10px;cursor:pointer;font-family:var(--font);font-weight:500}
+.tbl-btn:hover{border-color:var(--ia-blue);color:var(--ia-blue)}
+.tbl-btn.del{border-color:rgba(224,58,58,.3);color:var(--danger)}
+.tbl-btn.del:hover{background:var(--danger-dim)}
+.pri-h{color:var(--danger);font-weight:700}
+.pri-m{color:var(--ia-orange2);font-weight:700}
+.pri-l{color:var(--text3)}
+.email-yes{font-size:9px;padding:2px 5px;border-radius:3px;background:var(--ia-green-dim);color:var(--ia-green);font-weight:700}
+.email-no{font-size:9px;padding:2px 5px;border-radius:3px;background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
+.tbl-scroll{overflow-y:auto;max-height:300px}
+
+/* IMPORT */
+.method-toggle{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:12px}
+.mt-opt{padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--r);background:var(--surface2);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px}
+.mt-opt.active{border-color:var(--ia-blue);background:var(--ia-blue-dim)}
+.mt-ic{font-size:17px;flex-shrink:0}
+.mt-lbl{font-size:12px;font-weight:600;color:var(--text)}
+.mt-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.mt-opt.active .mt-lbl{color:var(--ia-blue)}
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--r2);padding:24px 16px;text-align:center;cursor:pointer;transition:all .2s;position:relative;background:var(--surface2)}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--ia-blue);background:var(--ia-blue-dim)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.tmpl-row{display:flex;align-items:center;justify-content:space-between;background:var(--ia-green-dim);border:1px solid rgba(58,158,63,.2);border-radius:var(--r);padding:9px 12px;margin-bottom:11px}
+.tmpl-btn{padding:5px 10px;border-radius:7px;border:1px solid rgba(58,158,63,.3);background:rgba(58,158,63,.15);color:var(--ia-green);font-size:11px;font-weight:600;cursor:pointer}
+.col-map-wrap{display:none}.col-map-wrap.show{display:block}
+.cm-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:6px;align-items:center;margin-bottom:5px}
+.cm-lbl{font-size:11px;color:var(--text2);font-weight:600}
+.cm-sel{background:var(--surface2);border:1.5px solid var(--border);border-radius:7px;padding:5px 8px;font-size:11px;color:var(--text);width:100%}
+.cm-sel.matched{border-color:var(--ia-green)}.cm-sel.unmatched{border-color:var(--ia-orange)}
+.preview-stats{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.pstat{padding:3px 9px;border-radius:6px;font-size:10px;font-weight:600}
+.ps-tot{background:var(--ia-blue-dim);color:var(--ia-blue)}
+.ps-em{background:var(--ia-green-dim);color:var(--ia-green)}
+.ps-ne{background:var(--ia-orange-dim);color:var(--ia-orange2)}
+.ps-dp{background:var(--danger-dim);color:var(--danger)}
+.preview-wrap{display:none}.preview-wrap.show{display:block}
+.import-actions{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap;align-items:center}
+.assign-sel{background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:6px 9px;font-size:12px;color:var(--text);flex:1}
+.imp-btn{padding:7px 17px;border-radius:var(--r);background:linear-gradient(135deg,var(--ia-blue),var(--ia-blue-light));color:#fff;font-size:12px;font-weight:700;flex-shrink:0;cursor:pointer}
+.imp-btn:disabled{opacity:.4;cursor:not-allowed}
+.clr-btn{padding:7px 11px;border-radius:var(--r);border:1.5px solid var(--border);background:transparent;color:var(--text2);font-size:11px;cursor:pointer}
+.prog-bar{background:var(--surface2);border-radius:4px;height:5px;overflow:hidden;margin-top:5px;border:1px solid var(--border)}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--ia-blue),var(--ia-green));border-radius:4px;transition:width .4s}
+.prog-lbl{font-size:10px;color:var(--text2);display:flex;justify-content:space-between;margin-top:7px;font-weight:500}
+.prog-wrap{display:none}.prog-wrap.show{display:block}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}
+.ff{display:flex;flex-direction:column;gap:4px}
+.ff label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.05em;text-transform:uppercase}
+.ff input,.ff select{background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);transition:border-color .2s;width:100%}
+.ff input:focus,.ff select:focus{border-color:var(--ia-blue);background:#fff}
+.ff input::placeholder{color:var(--text3)}
+.ff input.error{border-color:var(--danger)}
+.et-tog{display:flex;gap:5px}
+.et-opt{flex:1;padding:7px;border:1.5px solid var(--border);border-radius:8px;background:var(--surface2);cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--text2);transition:all .2s}
+.et-opt.yes.active{border-color:var(--ia-green);background:var(--ia-green-dim);color:var(--ia-green)}
+.et-opt.no.active{border-color:var(--border2);background:var(--surface3);color:var(--text3)}
+.form-actions{display:flex;gap:6px}
+.add-btn{padding:8px 17px;border-radius:var(--r);background:linear-gradient(135deg,var(--ia-blue),var(--ia-blue-light));color:#fff;font-size:12px;font-weight:700;cursor:pointer}
+.manual-form{display:none}.manual-form.show{display:block}
+.steps{display:flex;align-items:center;margin-bottom:12px}
+.step{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text3);font-weight:500}
+.step.active{color:var(--ia-blue)}.step.done{color:var(--ia-green)}
+.step-num{width:18px;height:18px;border-radius:50%;border:2px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0}
+.step.done .step-num{background:var(--ia-green);border-color:var(--ia-green);color:#fff}
+.step.active .step-num{background:var(--ia-blue);border-color:var(--ia-blue);color:#fff}
+.step-line{flex:1;height:2px;background:var(--border);margin:0 4px}
+.al-row{display:flex;gap:9px;padding:7px 0;border-bottom:1px solid var(--border)}
+.al-row:last-child{border-bottom:none}
+.al-ic{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.al-act{font-size:11px;font-weight:600}
+.al-det{font-size:10px;color:var(--text3);margin-top:1px}
+.modal-bg{position:fixed;inset:0;background:rgba(15,31,61,.6);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:20px;width:320px;box-shadow:var(--shadow2)}
+.modal-title{font-size:13px;font-weight:700;color:var(--ia-blue);margin-bottom:12px}
+.mf{margin-bottom:9px}
+.mf label{display:block;font-size:10px;color:var(--text3);margin-bottom:3px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.mf select{width:100%;background:var(--surface2);border:1.5px solid var(--border);border-radius:8px;padding:7px 9px;font-size:12px;color:var(--text)}
+.mbtns{display:flex;gap:7px;margin-top:13px}
+.mcancel{flex:1;padding:7px;border-radius:var(--r);border:1.5px solid var(--border);background:transparent;color:var(--text2);font-size:12px;cursor:pointer}
+.msave{flex:1;padding:7px;border-radius:var(--r);background:linear-gradient(135deg,var(--ia-blue),var(--ia-blue-light));color:#fff;font-size:12px;font-weight:700;cursor:pointer}
+.toast{position:fixed;bottom:14px;right:14px;background:var(--surface);border-left:4px solid var(--ia-green);border-radius:var(--r);padding:9px 13px;font-size:12px;color:var(--text);transform:translateY(60px);opacity:0;transition:all .3s;z-index:999;max-width:260px;box-shadow:var(--shadow2);font-weight:500}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.err{border-left-color:var(--danger);color:var(--danger)}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);gap:9px;text-align:center;padding:32px}
+.ia-btn-ghost{padding:5px 11px;border-radius:8px;border:1.5px solid rgba(26,61,124,.25);background:var(--ia-blue-dim);color:var(--ia-blue);font-size:11px;font-weight:600;cursor:pointer}
+.ia-btn-ghost:hover{background:rgba(26,61,124,.18)}
+</style>
+</head>
+<body oncontextmenu="return false;">
+
+<!-- LOGIN -->
+<div id="screen-login">
+  <div class="login-pattern"></div>
+  <div class="login-glow"></div>
+  <div class="login-card">
+    <div class="brand-wrap">
+      <div class="brand-icon">📞</div>
+      <div>
+        <div class="brand-name">iAmaze <span>CRM</span></div>
+        <div class="brand-tag">CONSULT · CONNECT · CREATE</div>
+      </div>
+    </div>
+    <div class="login-h">TeleCRM Portal</div>
+    <div class="login-sub">Secure M365-connected telecalling system</div>
+    <div class="demo-hint"><strong>Demo:</strong> Telecaller → ravi.kumar@iamaze.in &nbsp;|&nbsp; Admin → admin@iamaze.in &nbsp;/&nbsp; any password</div>
+    <div style="margin-bottom:13px">
+      <div class="sec-lbl">Login as</div>
+      <div class="role-grid">
+        <div class="role-opt active" onclick="selectRole('telecaller',this)">📞 Telecaller</div>
+        <div class="role-opt" onclick="selectRole('admin',this)">🛡️ Admin / Owner</div>
+      </div>
+    </div>
+    <div class="fld"><label>Email</label><input type="email" id="l-email" value="ravi.kumar@iamaze.in"/></div>
+    <div class="fld"><label>Password</label><input type="password" id="l-pass" value="demo123"/></div>
+    <button class="login-btn" onclick="doLogin()">Sign in with M365 →</button>
+    <div class="login-note">Protected by Azure AD · <span>MFA enabled</span> · All sessions logged</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="screen-app">
+  <nav class="topnav">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="nav-brand">
+        <div class="nav-icon">📞</div>
+        <div><div class="nav-brand-txt">iAmaze <span>CRM</span></div><div class="nav-brand-sub">CONSULT · CONNECT · CREATE</div></div>
+      </div>
+      <div class="nsep"></div>
+      <div class="nav-badge" id="nav-badge">Telecaller</div>
+      <div class="nsep"></div>
+      <div class="ntabs" id="nav-tabs"></div>
+    </div>
+    <div class="nav-r">
+      <span id="nav-live" style="font-size:10px;color:rgba(255,255,255,.6);display:none"><span class="live-dot"></span>Live</span>
+      <div class="sess-tmr" id="sess-tmr" style="display:none">29:59</div>
+      <div class="nav-av" id="nav-av">RK</div>
+      <span class="nav-uname" id="nav-name">Ravi Kumar</span>
+      <button class="signout-btn" onclick="doLogout()">Sign out</button>
+    </div>
+  </nav>
+  <div class="wm-bar">
+    <span class="wm-txt" id="wm-txt">user@iamaze.in · Session logged</span>
+    <span class="wm-txt" id="wm-right">RESTRICTED — NO EMAIL / NO DOWNLOAD / NO EXPORT</span>
+  </div>
+  <div id="app-panels"></div>
+</div>
+
+<div class="modal-bg" id="modal">
+  <div class="modal">
+    <div class="modal-title">Assign / Reassign Lead</div>
+    <div class="mf"><label>Lead</label><select id="m-lead" style="color:var(--text)"></select></div>
+    <div class="mf"><label>Assign to</label><select id="m-tc" style="color:var(--text)"><option>Ravi Kumar</option><option>Neha Joshi</option><option>Suresh Babu</option><option>Divya Nair</option></select></div>
+    <div class="mf"><label>Priority</label><select id="m-pri" style="color:var(--text)"><option>High</option><option selected>Medium</option><option>Low</option></select></div>
+    <div class="mbtns"><button class="mcancel" onclick="closeModal()">Cancel</button><button class="msave" onclick="saveAssign()">Save</button></div>
+  </div>
+</div>
+<div class="toast" id="toast-el"></div>
+
+<script>
+let allLeads=[
+  {id:1,name:'Priya Sharma',role:'Sr Manager',co:'Infosys',phone:'+91 98765 43210',city:'Bengaluru',interest:'Teams + Exchange',pri:'High',emailSent:true,tc:'Ravi Kumar',status:'New',last:'—',fu:''},
+  {id:2,name:'Arjun Mehta',role:'IT Head',co:'TCS',phone:'+91 99123 45678',city:'Mumbai',interest:'M365 Business',pri:'High',emailSent:true,tc:'Ravi Kumar',status:'Callback',last:'17 Apr',fu:'20 Apr'},
+  {id:3,name:'Sunita Rao',role:'CFO',co:'Capgemini',phone:'+91 97654 32109',city:'Pune',interest:'SharePoint',pri:'Medium',emailSent:false,tc:'Neha Joshi',status:'Not Interested',last:'16 Apr',fu:''},
+  {id:4,name:'Dev Patel',role:'CTO',co:'Wipro',phone:'+91 90001 23456',city:'Hyderabad',interest:'Teams Phone',pri:'High',emailSent:true,tc:'Ravi Kumar',status:'New',last:'—',fu:''},
+  {id:5,name:'Kavita Singh',role:'Director IT',co:'HCL',phone:'+91 88765 43210',city:'Noida',interest:'Defender + Intune',pri:'Medium',emailSent:true,tc:'Neha Joshi',status:'Meeting',last:'15 Apr',fu:'19 Apr'},
+  {id:6,name:'Mohan Das',role:'VP IT',co:'Mindtree',phone:'+91 91234 56789',city:'Chennai',interest:'Azure AD + M365',pri:'Low',emailSent:false,tc:'Suresh Babu',status:'New',last:'—',fu:''},
+  {id:7,name:'Ankit Verma',role:'IT Manager',co:'L&T Infotech',phone:'+91 99234 56789',city:'Mumbai',interest:'Teams + Exchange',pri:'Medium',emailSent:true,tc:'Neha Joshi',status:'Contacted',last:'16 Apr',fu:'21 Apr'},
+  {id:8,name:'Rekha Iyer',role:'COO',co:'Accenture',phone:'+91 97000 11234',city:'Bengaluru',interest:'Defender + Intune',pri:'High',emailSent:true,tc:'Suresh Babu',status:'Meeting',last:'17 Apr',fu:'21 Apr'},
+];
+let nextId=9,activityLog=[],parsedRows=[],excelHeaders=[],emailSentManual=true,recentlyAdded=[];
+let sessionSeconds=1799,sessionTimer=null,currentRole='telecaller';
+let currentUser='ravi.kumar@iamaze.in',currentLead=null,selectedOutcome=null;
+let dbFilter='all',tcFilter='all',tcSearch='';
+const TC=['Ravi Kumar','Neha Joshi','Suresh Babu','Divya Nair'];
+const SC={New:'s-new',Callback:'s-cb',Meeting:'s-mtg','Not Interested':'s-ni','No Reply':'s-nr',Contacted:'s-ct'};
+const SPCLS={New:'sp s-new',Callback:'sp s-cb',Meeting:'sp s-mtg','Not Interested':'sp s-ni','No Reply':'sp s-nr',Contacted:'sp s-ct'};
+
+function selectRole(r,el){currentRole=r;document.querySelectorAll('.role-opt').forEach(e=>e.classList.remove('active'));el.classList.add('active');document.getElementById('l-email').value=r==='admin'?'admin@iamaze.in':'ravi.kumar@iamaze.in';}
+
+function doLogin(){
+  currentUser=document.getElementById('l-email').value.trim()||'user@iamaze.in';
+  document.getElementById('screen-login').style.display='none';
+  document.getElementById('screen-app').style.display='flex';
+  const isAdmin=currentRole==='admin';
+  const name=isAdmin?'Admin User':currentUser.split('@')[0].split('.').map(w=>w[0].toUpperCase()+w.slice(1)).join(' ');
+  const ini=name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const av=document.getElementById('nav-av');av.textContent=ini;av.className='nav-av '+(isAdmin?'nav-ad-av':'nav-tc-av');
+  document.getElementById('nav-name').textContent=name;
+  const badge=document.getElementById('nav-badge');badge.textContent=isAdmin?'Admin / Owner':'Telecaller';badge.className='nav-badge '+(isAdmin?'nb-ad':'nb-tc');
+  document.getElementById('wm-txt').textContent=`${currentUser} · Session: IA-2024-${Math.floor(7700+Math.random()*99)}`;
+  if(isAdmin){document.getElementById('wm-right').textContent='ADMIN — FULL ACCESS';document.getElementById('nav-live').style.display='flex';buildAdminTabs();}
+  else{document.getElementById('sess-tmr').style.display='flex';buildTelecallerApp();startTimer();}
+  logAct('Signed in','Session started',isAdmin?'var(--ia-orange)':'var(--ia-green)');
+}
+
+function doLogout(){clearInterval(sessionTimer);sessionTimer=null;sessionSeconds=1799;document.getElementById('screen-app').style.display='none';document.getElementById('screen-login').style.display='flex';currentLead=null;selectedOutcome=null;activityLog=[];document.getElementById('app-panels').innerHTML='';document.getElementById('nav-tabs').innerHTML='';}
+
+function startTimer(){sessionTimer=setInterval(()=>{sessionSeconds--;if(sessionSeconds<=0){clearInterval(sessionTimer);doLogout();return;}const m=String(Math.floor(sessionSeconds/60)).padStart(2,'0'),s=String(sessionSeconds%60).padStart(2,'0');const el=document.getElementById('sess-tmr');el.textContent=`${m}:${s}`;if(sessionSeconds<=300)el.style.background='rgba(224,58,58,.2)';},1000);}
+
+// ── TELECALLER ──
+function buildTelecallerApp(){
+  document.getElementById('nav-tabs').innerHTML='';
+  document.getElementById('app-panels').innerHTML=`
+  <div class="tc-body">
+    <div class="tc-sidebar">
+      <div class="sb-top"><div class="sb-search"><span class="sb-si">🔍</span><input type="text" placeholder="Search leads…" oninput="tcSearch=this.value.toLowerCase();renderTCLeads()"/></div></div>
+      <div class="sb-filters">
+        <button class="sf active" onclick="tcFilter='all';setActF(this);renderTCLeads()">All</button>
+        <button class="sf" onclick="tcFilter='New';setActF(this);renderTCLeads()">New</button>
+        <button class="sf" onclick="tcFilter='Callback';setActF(this);renderTCLeads()">Callback</button>
+        <button class="sf" onclick="tcFilter='Meeting';setActF(this);renderTCLeads()">Meeting</button>
+      </div>
+      <div class="sb-stats">
+        <div class="sb-st"><div class="sb-sv" id="tc-t">0</div><div class="sb-sl">Total</div></div>
+        <div class="sb-st"><div class="sb-sv" id="tc-c">0</div><div class="sb-sl">Called</div></div>
+        <div class="sb-st"><div class="sb-sv" id="tc-p">0</div><div class="sb-sl">Pending</div></div>
+      </div>
+      <div class="leads-list" id="tc-leads-list"></div>
+    </div>
+    <div class="tc-main" id="tc-main">
+      <div class="empty-state" id="tc-empty">
+        <div style="font-size:34px;opacity:.3">📋</div>
+        <div style="font-size:14px;font-weight:600;color:var(--ia-blue)">Select a lead to begin</div>
+        <div style="font-size:11px;max-width:200px;line-height:1.7;color:var(--text3)">Choose a lead from the list to view their phone number and log your call</div>
+      </div>
+      <div id="tc-detail" style="display:none;flex-direction:column;gap:11px"></div>
+    </div>
+    <div class="tc-act">
+      <div class="ac-hdr">ACTIVITY LOG<span class="ac-cnt" id="ac-cnt">0</span></div>
+      <div class="ac-list" id="ac-list"><div style="padding:14px 11px;font-size:10px;color:var(--text3);text-align:center;line-height:1.7">No activity yet.<br/>Every action logged here.</div></div>
+    </div>
+  </div>`;
+  renderTCLeads();
+}
+
+function setActF(el){document.querySelectorAll('.sf').forEach(e=>e.classList.remove('active'));el.classList.add('active');}
+function getMyLeads(){return allLeads.filter(l=>l.tc==='Ravi Kumar'||l.tc===currentUser.split('@')[0].split('.').map(w=>w[0].toUpperCase()+w.slice(1)).join(' '));}
+
+function renderTCLeads(){
+  const my=getMyLeads().filter(l=>{
+    const ms=!tcSearch||l.name.toLowerCase().includes(tcSearch)||l.co.toLowerCase().includes(tcSearch);
+    const mf=tcFilter==='all'||l.status===tcFilter;
+    return ms&&mf;
+  });
+  document.getElementById('tc-leads-list').innerHTML=my.map(l=>`
+    <div class="lead-card ${currentLead&&currentLead.id===l.id?'active':''}" onclick="openLead(${l.id})">
+      <div class="lc-top"><div class="lc-name">${l.name}</div><div class="lc-st ${SC[l.status]||'s-new'}">${l.status}</div></div>
+      <div class="lc-co">${l.role} · ${l.co}</div>
+      <div class="lc-meta"><span class="lc-dot" style="background:${l.pri==='High'?'var(--danger)':l.pri==='Medium'?'var(--ia-orange)':'var(--text3)'}"></span>${l.pri}${l.emailSent?' <span class="etag">✓ Email</span>':''}</div>
+    </div>`).join('')||'<div style="padding:14px;font-size:11px;color:var(--text3);text-align:center">No leads found</div>';
+  const all=getMyLeads(),called=all.filter(l=>l.status!=='New').length;
+  ['tc-t','tc-c','tc-p'].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.textContent=[all.length,called,all.length-called][i];});
+}
+
+function openLead(id){
+  currentLead=allLeads.find(l=>l.id===id);selectedOutcome=null;renderTCLeads();
+  document.getElementById('tc-empty').style.display='none';
+  const det=document.getElementById('tc-detail');det.style.display='flex';det.style.flexDirection='column';
+  const priCls=currentLead.pri==='High'?'background:var(--danger-dim);color:var(--danger);border:1px solid rgba(224,58,58,.2)':currentLead.pri==='Medium'?'background:var(--ia-orange-dim);color:var(--ia-orange2);border:1px solid rgba(245,166,35,.2)':'background:var(--surface3);color:var(--text3);border:1px solid var(--border)';
+  det.innerHTML=`
+    <div class="card">
+      <div class="dc-hdr">
+        <div class="dc-av">${currentLead.name.split(' ').map(w=>w[0]).join('').slice(0,2)}</div>
+        <div style="flex:1">
+          <div class="dc-name">${currentLead.name}</div>
+          <div class="dc-role">${currentLead.role} · ${currentLead.co}</div>
+          <div style="display:flex;align-items:center;flex-wrap:wrap;margin-top:3px">
+            <span style="display:inline-block;font-size:9px;font-weight:600;padding:2px 7px;border-radius:20px;${priCls}">${currentLead.pri} priority</span>
+            ${currentLead.emailSent?'<span class="email-flag">✓ Intro email sent</span>':''}
+          </div>
+        </div>
+      </div>
+      <div class="phone-card">
+        <div>
+          <div class="phone-lbl">📞 Phone — dial from your mobile</div>
+          <div class="phone-num">${currentLead.phone}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px;font-weight:500">Viewing this number is recorded in the audit log</div>
+        </div>
+        <div class="audit-pill"><div class="audit-blink"></div>Logged</div>
+      </div>
+      <div class="info-grid">
+        <div class="df"><div class="df-lbl">City</div><div class="df-val">${currentLead.city||'—'}</div></div>
+        <div class="df"><div class="df-lbl">M365 Interest</div><div class="df-val">${currentLead.interest||'—'}</div></div>
+        <div class="df"><div class="df-lbl">Last contacted</div><div class="df-val">${currentLead.last||'—'}</div></div>
+        <div class="df"><div class="df-lbl">Follow-up set</div><div class="df-val">${currentLead.fu||'Not set'}</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-title">Call outcome</div>
+      <div class="outcome-grid">
+        <div class="ob" id="ob-connected" onclick="selOut('connected')"><div class="ob-ic">📞</div><div class="ob-lb">Connected</div></div>
+        <div class="ob" id="ob-noreply" onclick="selOut('noreply')"><div class="ob-ic">❌</div><div class="ob-lb">No reply</div></div>
+        <div class="ob" id="ob-callback" onclick="selOut('callback')"><div class="ob-ic">🔁</div><div class="ob-lb">Callback</div></div>
+        <div class="ob" id="ob-meeting" onclick="selOut('meeting')"><div class="ob-ic">📅</div><div class="ob-lb">Meeting</div></div>
+        <div class="ob" id="ob-notint" onclick="selOut('notint')"><div class="ob-ic">🚫</div><div class="ob-lb">Not interested</div></div>
+      </div>
+    </div>
+    <div class="mtg-panel" id="mtg-panel">
+      <div class="sec-title" style="color:var(--ia-blue)">Schedule meeting</div>
+      <div class="mp-row">
+        <select class="mp-sel"><option>Online (Teams)</option><option>Offline</option><option>Online (Zoom)</option></select>
+        <input type="date" class="mp-inp" id="mtg-date"/>
+        <input type="time" class="mp-inp"/>
+        <button class="mtg-btn" onclick="confirmMtg()">Confirm</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="sec-title">Call notes <span style="color:var(--danger)">* required</span></div>
+      <textarea class="notes-ta" id="call-notes" placeholder="Add your call notes here…" oninput="notesChg(this)"></textarea>
+      <div class="notes-ft"><div class="notes-req" id="notes-req">Notes required before saving.</div><div class="notes-ctr" id="notes-ctr" style="margin-left:auto">0 / 500</div></div>
+      <div class="bottom-row">
+        <div class="fu-wrap"><span class="fu-lbl">Follow-up</span><input type="date" class="fu-inp" id="fu-date"/></div>
+        <button class="save-btn" id="save-btn" onclick="saveRec()">Save Record</button>
+      </div>
+    </div>
+    <div class="ai-panel">
+      <div class="ai-hdr">
+        <div style="display:flex;align-items:center;gap:6px"><div class="ai-pulse"></div><div><div class="ai-title">AI Call Assistant — iAmaze</div><div class="ai-sub">Powered by Claude · Call prep & objection handling</div></div></div>
+        <button class="ai-tog" onclick="toggleAI(this)">Minimise</button>
+      </div>
+      <div id="ai-body" class="ai-body"></div>
+      <div class="ai-chips" id="ai-chips">
+        <div class="ai-chip" onclick="askAI('Give me the best opening line for this call.')">Opening line</div>
+        <div class="ai-chip" onclick="askAI('How do I handle: we already use Google Workspace?')">Google objection</div>
+        <div class="ai-chip" onclick="askAI('Give me a short meeting pitch script.')">Meeting pitch</div>
+        <div class="ai-chip" onclick="askAI('What M365 features suit this customer?')">Key features</div>
+      </div>
+      <div class="ai-footer"><input class="ai-inp" id="ai-inp" placeholder="Ask about this lead…" onkeydown="if(event.key==='Enter')sendAI()"/><button class="ai-send" onclick="sendAI()">Ask →</button></div>
+    </div>`;
+  resetAI();logAct('Phone viewed',`${currentLead.name} · ${currentLead.phone}`,'var(--ia-orange)');
+}
+
+function selOut(t){selectedOutcome=t;document.querySelectorAll('.ob').forEach(b=>b.className='ob');document.getElementById(`ob-${t}`).classList.add(`sel-${t}`);document.getElementById('mtg-panel').classList.toggle('show',t==='meeting');const L={connected:'Connected',noreply:'No reply',callback:'Callback',meeting:'Meeting',notint:'Not interested'};logAct('Outcome set',`${currentLead.name} → ${L[t]}`,'var(--ia-blue)');}
+function notesChg(ta){const len=Math.min(ta.value.length,500);document.getElementById('notes-ctr').textContent=`${len} / 500`;if(len>0){ta.classList.remove('error');document.getElementById('notes-req').style.display='none';}if(ta.value.length>500)ta.value=ta.value.slice(0,500);}
+function saveRec(){const notes=document.getElementById('call-notes').value.trim();if(!notes){document.getElementById('call-notes').classList.add('error');document.getElementById('notes-req').style.display='block';showToast('Notes required.','err');return;}if(!selectedOutcome){showToast('Select a call outcome.','err');return;}const map={connected:'Contacted',noreply:'No Reply',callback:'Callback',meeting:'Meeting',notint:'Not Interested'};const fu=document.getElementById('fu-date').value;if(currentLead){currentLead.status=map[selectedOutcome];if(fu)currentLead.fu=fu;currentLead.last='Today';}const btn=document.getElementById('save-btn');btn.textContent='Saved ✓';btn.classList.add('saved');logAct('Call saved',`${currentLead.name} → ${map[selectedOutcome]}`,'var(--ia-green)');renderTCLeads();showToast(`Saved for ${currentLead.name}`);setTimeout(()=>{btn.textContent='Save Record';btn.classList.remove('saved');},3000);}
+function confirmMtg(){const d=document.getElementById('mtg-date')?.value;if(!d){showToast('Select a meeting date.','err');return;}logAct('Meeting set',`${currentLead.name} · ${d}`,'var(--ia-blue)');showToast(`Meeting confirmed for ${currentLead.name}`);}
+function resetAI(){document.getElementById('ai-body').innerHTML=`<div class="ai-msg ai-a"><div class="ai-ic">✦</div><div class="ai-txt">Ready for <strong>${currentLead.name}</strong> at <strong>${currentLead.co}</strong>. Interest: <strong>${currentLead.interest}</strong>${currentLead.emailSent?'. Intro email sent — reference it':' — no email sent yet'}.</div></div>`;}
+function toggleAI(btn){const b=document.getElementById('ai-body'),c=document.getElementById('ai-chips'),f=document.querySelector('.ai-footer'),h=b.style.display==='none';b.style.display=h?'block':'none';c.style.display=h?'flex':'none';f.style.display=h?'flex':'none';btn.textContent=h?'Minimise':'Expand';}
+function askAI(q){document.getElementById('ai-inp').value=q;sendAI();}
+async function sendAI(){const inp=document.getElementById('ai-inp');const q=inp.value.trim();if(!q)return;inp.value='';const body=document.getElementById('ai-body');body.innerHTML+=`<div class="ai-msg ai-u"><div class="ai-ic">you</div><div class="ai-txt">${q}</div></div>`;const lid='l'+Date.now();body.innerHTML+=`<div class="ai-msg ai-a" id="${lid}"><div class="ai-ic">✦</div><div class="ai-txt"><div class="ai-load"><div class="ai-d"></div><div class="ai-d"></div><div class="ai-d"></div></div></div></div>`;body.scrollTop=body.scrollHeight;const ctx=currentLead?`Telecaller calling ${currentLead.name}, ${currentLead.role} at ${currentLead.co} (${currentLead.city}). Interest: ${currentLead.interest}. ${currentLead.emailSent?'Intro email sent.':'No email sent.'} Status: ${currentLead.status}.`:'';try{const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:`You are a B2B telecalling coach for iAmaze, a Microsoft 365 consulting company in India. Help with call scripts, objection handling, M365 knowledge. Concise, practical, under 120 words. ${ctx}`,messages:[{role:'user',content:q}]})});const data=await res.json();const text=data.content?.[0]?.text||'Unable to respond.';document.getElementById(lid).querySelector('.ai-txt').innerHTML=text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br/>');}catch(e){document.getElementById(lid).querySelector('.ai-txt').textContent='AI unavailable.';}body.scrollTop=body.scrollHeight;}
+function logAct(action,detail,color){const t=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'});activityLog.unshift({action,detail,t,color});if(activityLog.length>30)activityLog.pop();const el=document.getElementById('ac-list');if(!el)return;el.innerHTML=activityLog.map(a=>`<div class="ac-item"><div class="ac-act" style="color:${a.color}">${a.action}</div><div class="ac-det">${a.detail}</div><div class="ac-time">${a.t}</div></div>`).join('');const cnt=document.getElementById('ac-cnt');if(cnt)cnt.textContent=activityLog.length;}
+
+// ── ADMIN ──
+function buildAdminTabs(){
+  document.getElementById('nav-tabs').innerHTML=`<button class="ntab active" onclick="swAdmin('dashboard',this)">Dashboard</button><button class="ntab" onclick="swAdmin('leads',this)">All Leads</button><button class="ntab" onclick="swAdmin('import',this)">Import Leads</button><button class="ntab" onclick="swAdmin('audit',this)">Audit Log</button>`;
+  document.getElementById('app-panels').innerHTML=`<div class="panel" id="ap-dashboard"></div><div class="panel hidden" id="ap-leads"></div><div class="panel hidden" id="ap-import"></div><div class="panel hidden" id="ap-audit"></div>`;
+  buildDash();buildLeadsTab();buildImportTab();buildAuditTab();
+}
+function swAdmin(tab,el){['dashboard','leads','import','audit'].forEach(t=>document.getElementById('ap-'+t).classList.toggle('hidden',t!==tab));document.querySelectorAll('.ntab').forEach(t=>t.classList.remove('active'));el.classList.add('active');if(tab==='leads')renderAdminLeads();}
+
+function buildDash(){
+  document.getElementById('ap-dashboard').innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px">
+    <div style="display:flex;gap:4px;align-items:center"><span style="font-size:11px;color:var(--text2);font-weight:500;margin-right:2px">Period:</span><button class="tf active" onclick="setPeriod(this)">7 days</button><button class="tf" onclick="setPeriod(this)">30 days</button><button class="tf" onclick="setPeriod(this)">90 days</button><button class="tf" onclick="setPeriod(this)">All time</button></div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2);font-weight:500">Telecaller:<select style="background:var(--surface);border:1.5px solid var(--border);border-radius:7px;padding:4px 8px;font-size:11px;color:var(--text)"><option>All telecallers</option>${TC.map(t=>`<option>${t}</option>`).join('')}</select></div>
+  </div>
+  <div class="kpi-row">
+    <div class="kpi c-b"><div class="kpi-lbl">Total leads</div><div class="kpi-val" id="kv-total">${allLeads.length}</div><div class="kpi-sub up">↑ Live count</div><svg class="spark" viewBox="0 0 55 24"><polyline points="0,20 9,16 18,18 27,11 36,13 45,5 55,8" fill="none" stroke="var(--ia-blue)" stroke-width="2"/></svg></div>
+    <div class="kpi c-g"><div class="kpi-lbl">Contacted</div><div class="kpi-val" id="kv-cont">0</div><div class="kpi-sub up" id="kv-cov">↑ 0% coverage</div><svg class="spark" viewBox="0 0 55 24"><polyline points="0,20 9,16 18,12 27,9 36,7 45,4 55,2" fill="none" stroke="var(--ia-green)" stroke-width="2"/></svg></div>
+    <div class="kpi c-a"><div class="kpi-lbl">Meetings set</div><div class="kpi-val" id="kv-mtg">0</div><div class="kpi-sub up">↑ Scheduled</div><svg class="spark" viewBox="0 0 55 24"><polyline points="0,22 9,18 18,16 27,12 36,9 45,6 55,3" fill="none" stroke="var(--ia-orange)" stroke-width="2"/></svg></div>
+    <div class="kpi c-r"><div class="kpi-lbl">Callbacks pending</div><div class="kpi-val" id="kv-cb">0</div><div class="kpi-sub dn">↓ Follow-up needed</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-hdr"><div><div class="card-title">Lead conversion funnel</div><div class="card-sub">Import → Close</div></div></div><div id="dash-funnel"></div></div>
+    <div class="card"><div class="card-hdr"><div><div class="card-title">Call outcome breakdown</div><div class="card-sub">All results</div></div></div><div class="donut-wrap"><svg width="96" height="96" viewBox="0 0 96 96" id="donut-svg" style="flex-shrink:0"></svg><div id="donut-leg"></div></div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-hdr"><div><div class="card-title">Telecaller performance</div><div class="card-sub">Calls · Meetings</div></div><button class="ia-btn-ghost" onclick="openAssign(null)">+ Assign</button></div><div id="dash-perf"></div></div>
+    <div class="card"><div class="card-hdr"><div><div class="card-title">M365 product interest</div><div class="card-sub">Most popular</div></div></div><div id="dash-int"></div></div>
+  </div>`;
+  refreshDash();
+}
+
+function refreshDash(){
+  const total=allLeads.length,cont=allLeads.filter(l=>l.status!=='New').length,mtg=allLeads.filter(l=>l.status==='Meeting').length,cb=allLeads.filter(l=>l.status==='Callback').length,cov=total?Math.round(cont/total*100):0;
+  const sv=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  sv('kv-total',total);sv('kv-cont',cont);sv('kv-mtg',mtg);sv('kv-cb',cb);sv('kv-cov',`↑ ${cov}% coverage`);
+  const fd=document.getElementById('dash-funnel');
+  if(fd){const fD=[{l:'Total',v:total,p:100,c:'var(--ia-blue)',bg:'rgba(26,61,124,.08)'},{l:'Contacted',v:cont,p:total?Math.round(cont/total*100):0,c:'var(--ia-green)',bg:'rgba(58,158,63,.08)'},{l:'Meetings',v:mtg,p:total?Math.round(mtg/total*100):0,c:'var(--ia-orange)',bg:'rgba(245,166,35,.08)'},{l:'Callbacks',v:cb,p:total?Math.round(cb/total*100):0,c:'var(--danger)',bg:'rgba(224,58,58,.06)'}];fd.innerHTML=fD.map(f=>`<div class="fn-row"><div class="fn-lbl">${f.l}</div><div class="fn-track"><div class="fn-fill" style="width:${f.p}%;background:${f.bg};border:1px solid ${f.c}30"><span class="fn-num" style="color:${f.c}">${f.v}</span></div></div><div class="fn-pct" style="color:${f.c}">${f.p}%</div></div>`).join('');}
+  const dSVG=document.getElementById('donut-svg'),dLeg=document.getElementById('donut-leg');
+  if(dSVG&&dLeg){const dd=[{l:'New',v:allLeads.filter(l=>l.status==='New').length,c:'var(--ia-blue)'},{l:'Contacted',v:allLeads.filter(l=>l.status==='Contacted').length,c:'var(--ia-green)'},{l:'Callback',v:cb,c:'var(--ia-orange)'},{l:'Meeting',v:mtg,c:'#7c3aed'},{l:'Not interested',v:allLeads.filter(l=>l.status==='Not Interested').length,c:'var(--text3)'}].filter(d=>d.v>0);const tot=dd.reduce((a,d)=>a+d.v,0)||1;const cx=48,cy=48,r=32,ir=19;let a=-Math.PI/2,paths='';dd.forEach(d=>{const sw=(d.v/tot)*2*Math.PI,x1=cx+r*Math.cos(a),y1=cy+r*Math.sin(a),x2=cx+r*Math.cos(a+sw),y2=cy+r*Math.sin(a+sw),xi1=cx+ir*Math.cos(a),yi1=cy+ir*Math.sin(a),xi2=cx+ir*Math.cos(a+sw),yi2=cy+ir*Math.sin(a+sw),lg=sw>Math.PI?1:0;paths+=`<path d="M${x1.toFixed(1)},${y1.toFixed(1)} A${r},${r} 0 ${lg},1 ${x2.toFixed(1)},${y2.toFixed(1)} L${xi2.toFixed(1)},${yi2.toFixed(1)} A${ir},${ir} 0 ${lg},0 ${xi1.toFixed(1)},${yi1.toFixed(1)} Z" fill="${d.c}" opacity="0.85"/>`;a+=sw;});dSVG.innerHTML=paths+`<text x="48" y="45" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ia-blue)" font-family="DM Sans">${total}</text><text x="48" y="55" text-anchor="middle" font-size="8" fill="var(--text3)" font-family="DM Sans">leads</text>`;dLeg.innerHTML=dd.map(d=>`<div class="dl"><div class="dl-dot" style="background:${d.c}"></div><div class="dl-lbl">${d.l}</div><div class="dl-v">${d.v}</div><div class="dl-p">${Math.round(d.v/tot*100)}%</div></div>`).join('');}
+  const perf=document.getElementById('dash-perf');
+  if(perf){const tcs=[{n:'Ravi Kumar',i:'RK',c:'var(--ia-blue)'},{n:'Neha Joshi',i:'NJ',c:'var(--ia-green)'},{n:'Suresh Babu',i:'SB',c:'var(--ia-orange)'},{n:'Divya Nair',i:'DN',c:'#7c3aed'}];perf.innerHTML=tcs.map(t=>{const calls=allLeads.filter(l=>l.tc===t.n&&l.status!=='New').length,mtgs=allLeads.filter(l=>l.tc===t.n&&l.status==='Meeting').length,pct=Math.min(Math.round(calls/8*100),100);return `<div class="perf-row"><div class="pav" style="background:${t.c}18;color:${t.c};border:1.5px solid ${t.c}44">${t.i}</div><div class="pinfo"><div class="pname">${t.n}</div><div class="ptrack"><div class="pbar" style="width:${pct}%;background:${t.c}"></div></div></div><div class="pstats"><div class="ps"><div class="psv" style="color:${t.c}">${calls}</div><div class="psl">called</div></div><div class="ps"><div class="psv" style="color:var(--ia-green)">${mtgs}</div><div class="psl">mtgs</div></div></div></div>`;}).join('');}
+  const intEl=document.getElementById('dash-int');
+  if(intEl){const iD=[{l:'Teams + Exchange',c:'var(--ia-blue)'},{l:'M365 Business',c:'var(--ia-green)'},{l:'Azure AD + M365',c:'var(--ia-orange)'},{l:'Defender + Intune',c:'#7c3aed'},{l:'Teams Phone',c:'#0891b2'},{l:'SharePoint',c:'var(--danger)'}].map(i=>({...i,v:allLeads.filter(l=>l.interest===i.l).length}));const mx=Math.max(...iD.map(i=>i.v),1);intEl.innerHTML=iD.map(i=>`<div class="int-row"><div class="int-top"><span class="int-lbl">${i.l}</span><span class="int-val" style="color:${i.c}">${i.v}</span></div><div class="int-track"><div class="int-fill" style="width:${Math.round(i.v/mx*100)}%;background:${i.c}"></div></div></div>`).join('');}
+}
+
+function buildLeadsTab(){
+  document.getElementById('ap-leads').innerHTML=`<div class="card"><div class="card-hdr"><div><div class="card-title">All Leads</div><div class="card-sub" id="leads-sub">Full database</div></div><div style="display:flex;gap:6px;align-items:center"><input type="text" id="leads-search" placeholder="Search…" oninput="renderAdminLeads()" style="background:var(--surface2);border:1.5px solid var(--border);border-radius:7px;padding:5px 9px;font-size:11px;color:var(--text);width:150px"/><button class="ia-btn-ghost" onclick="swAdmin('import',document.querySelectorAll('.ntab')[2])">+ Import</button><button onclick="exportCSV()" style="padding:5px 10px;border-radius:var(--r);border:1.5px solid var(--border);background:transparent;color:var(--text2);font-size:11px;font-weight:500;cursor:pointer">Export CSV</button></div></div><div class="tbl-filters"><button class="tf active" onclick="setDbF('all',this)">All</button><button class="tf" onclick="setDbF('New',this)">New</button><button class="tf" onclick="setDbF('Callback',this)">Callback</button><button class="tf" onclick="setDbF('Meeting',this)">Meeting</button><button class="tf" onclick="setDbF('email-yes',this)">Email sent</button><button class="tf" onclick="setDbF('email-no',this)">Email not sent</button><button class="tf" onclick="setDbF('High',this)">High priority</button></div><div class="tbl-scroll tbl-wrap"><table><thead><tr><th>#</th><th>Name</th><th>Company</th><th>Phone</th><th>City</th><th>Interest</th><th>Priority</th><th>Email</th><th>Assigned</th><th>Status</th><th>Follow-up</th><th>Action</th></tr></thead><tbody id="admin-leads-body"></tbody></table></div></div>`;
+  renderAdminLeads();
+}
+function setDbF(f,el){dbFilter=f;document.querySelectorAll('.tbl-filters .tf').forEach(e=>e.classList.remove('active'));el.classList.add('active');renderAdminLeads();}
+function renderAdminLeads(){
+  const q=(document.getElementById('leads-search')?.value||'').toLowerCase();
+  const filtered=allLeads.filter(l=>{const mq=!q||l.name.toLowerCase().includes(q)||l.co.toLowerCase().includes(q)||l.tc.toLowerCase().includes(q);if(dbFilter==='all')return mq;if(dbFilter==='email-yes')return mq&&l.emailSent;if(dbFilter==='email-no')return mq&&!l.emailSent;if(dbFilter==='High')return mq&&l.pri==='High';return mq&&l.status===dbFilter;});
+  const sub=document.getElementById('leads-sub');if(sub)sub.textContent=`${allLeads.length} total · ${filtered.length} shown`;
+  const body=document.getElementById('admin-leads-body');if(!body)return;
+  body.innerHTML=filtered.map((l,i)=>`<tr><td style="color:var(--text3)">${i+1}</td><td><div style="font-weight:600;color:var(--ia-blue)">${l.name}</div><div style="font-size:9px;color:var(--text3)">${l.role}</div></td><td style="color:var(--text2)">${l.co}</td><td style="font-family:var(--mono);font-size:10px">${l.phone}</td><td style="color:var(--text3)">${l.city||'—'}</td><td style="color:var(--text2)">${l.interest||'—'}</td><td class="${l.pri==='High'?'pri-h':l.pri==='Medium'?'pri-m':'pri-l'}">${l.pri}</td><td>${l.emailSent?'<span class="email-yes">✓</span>':'<span class="email-no">No</span>'}</td><td style="color:var(--text2);font-size:10px">${l.tc||'—'}</td><td><span class="${SPCLS[l.status]||'sp s-new'}">${l.status}</span></td><td style="color:var(--text3);font-size:10px">${l.fu||'—'}</td><td style="display:flex;gap:3px"><button class="tbl-btn" onclick="openAssign(${l.id})">Assign</button><button class="tbl-btn del" onclick="delLead(${l.id})">Del</button></td></tr>`).join('')||'<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--text3)">No leads found</td></tr>';
+}
+function delLead(id){allLeads=allLeads.filter(l=>l.id!==id);renderAdminLeads();refreshDash();showToast('Lead deleted');}
+
+function buildImportTab(){
+  document.getElementById('ap-import').innerHTML=`
+  <div class="card"><div class="card-hdr"><div><div class="card-title">Add Customers to Lead Database</div><div class="card-sub">Upload Excel or add manually</div></div></div>
+  <div class="method-toggle"><div class="mt-opt active" id="mt-excel" onclick="setImpMeth('excel')"><div class="mt-ic">📊</div><div><div class="mt-lbl">Upload Excel / CSV</div><div class="mt-sub">Bulk import from file</div></div></div><div class="mt-opt" id="mt-manual" onclick="setImpMeth('manual')"><div class="mt-ic">✍️</div><div><div class="mt-lbl">Add manually</div><div class="mt-sub">One at a time</div></div></div></div>
+  <div id="excel-section">
+    <div class="tmpl-row"><div style="font-size:11px;color:var(--ia-green);font-weight:600">Download iAmaze Excel template<span style="display:block;font-size:10px;font-weight:400;margin-top:1px;opacity:.8">Name · Company · Phone · City · M365 Interest · Priority · Email Sent</span></div><button class="tmpl-btn" onclick="dlTmpl()">⬇ Download</button></div>
+    <div class="steps"><div class="step active" id="step1"><div class="step-num">1</div>Upload</div><div class="step-line"></div><div class="step" id="step2"><div class="step-num">2</div>Map</div><div class="step-line"></div><div class="step" id="step3"><div class="step-num">3</div>Import</div></div>
+    <div class="upload-zone" id="drop-zone" ondragover="drgOver(event)" ondragleave="drgLeave()" ondrop="dropF(event)"><input type="file" accept=".xlsx,.xls,.csv" onchange="handleF(this.files[0])" id="file-input"/><div style="font-size:28px;opacity:.5;margin-bottom:8px">📂</div><div style="font-size:13px;font-weight:600;color:var(--ia-blue);margin-bottom:3px" id="upload-title">Drag & drop Excel file here</div><div style="font-size:11px;color:var(--text3)" id="upload-sub">or click to browse · .xlsx .xls .csv</div></div>
+    <div class="col-map-wrap" id="col-map"><div style="margin:12px 0 7px"><div class="sec-title">Map columns</div></div><div id="col-map-rows"></div><button style="margin-top:7px;padding:6px 14px;border-radius:var(--r);background:linear-gradient(135deg,var(--ia-blue),var(--ia-blue-light));color:#fff;font-size:11px;font-weight:700;cursor:pointer" onclick="applyMap()">Apply mapping →</button></div>
+    <div class="preview-wrap" id="preview-section"><div class="sec-title" style="margin-top:11px">Preview</div><div class="preview-stats" id="preview-stats"></div><div class="tbl-wrap" style="border:1px solid var(--border);border-radius:var(--r);max-height:200px;overflow:auto"><table><thead><tr><th>#</th><th>Name</th><th>Company</th><th>Phone</th><th>City</th><th>Interest</th><th>Priority</th><th>Email sent</th></tr></thead><tbody id="preview-body"></tbody></table></div>
+    <div class="import-actions"><span style="font-size:11px;color:var(--text2);font-weight:600;white-space:nowrap">Assign to:</span><select class="assign-sel" id="bulk-assign"><option value="">— Unassigned —</option>${TC.map(t=>`<option>${t}</option>`).join('')}</select><button class="clr-btn" onclick="clrUpload()">Clear</button><button class="imp-btn" id="import-btn" onclick="doImport()">Import leads</button></div>
+    <div class="prog-wrap" id="prog-wrap"><div class="prog-lbl"><span id="prog-txt">Importing…</span><span id="prog-pct">0%</span></div><div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div></div></div>
+  </div>
+  <div class="manual-form" id="manual-section"><div class="form-grid"><div class="ff"><label>Full name *</label><input type="text" id="m-name" placeholder="e.g. Priya Sharma"/></div><div class="ff"><label>Company *</label><input type="text" id="m-co" placeholder="e.g. Infosys Ltd"/></div><div class="ff"><label>Phone *</label><input type="text" id="m-phone" placeholder="+91 98765 43210"/></div><div class="ff"><label>City</label><input type="text" id="m-city" placeholder="e.g. Bengaluru"/></div><div class="ff"><label>M365 Interest</label><select id="m-interest"><option value="">— Select —</option><option>Teams + Exchange</option><option>M365 Business</option><option>Azure AD + M365</option><option>Defender + Intune</option><option>Teams Phone</option><option>SharePoint</option><option>Other</option></select></div><div class="ff"><label>Priority</label><select id="m-pri"><option value="Medium">Medium</option><option value="High">High</option><option value="Low">Low</option></select></div><div class="ff"><label>Assign to</label><select id="m-assign"><option value="">— Unassigned —</option>${TC.map(t=>`<option>${t}</option>`).join('')}</select></div><div class="ff"><label>Email sent?</label><div class="et-tog"><div class="et-opt yes active" id="et-yes" onclick="setEml(true)">✓ Yes</div><div class="et-opt no" id="et-no" onclick="setEml(false)">✗ No</div></div></div></div><div class="form-actions"><button class="add-btn" onclick="addManual()">Add Customer</button><button style="padding:8px 12px;border-radius:var(--r);border:1.5px solid var(--border);background:transparent;color:var(--text2);font-size:11px;font-weight:500;cursor:pointer" onclick="clrManual()">Clear</button></div></div>
+  </div>
+  <div class="card" id="recent-card" style="display:none"><div class="card-hdr"><div><div class="card-title">Recently Added</div><div class="card-sub" id="recent-sub">0 this session</div></div><button class="ia-btn-ghost" onclick="swAdmin('leads',document.querySelectorAll('.ntab')[1])">View all →</button></div><div class="tbl-wrap" style="max-height:180px;overflow:auto"><table><thead><tr><th>#</th><th>Name</th><th>Company</th><th>Phone</th><th>Priority</th><th>Email</th><th>Assigned</th></tr></thead><tbody id="recent-body"></tbody></table></div></div>`;
+}
+
+function buildAuditTab(){
+  const AUDIT=[{ic:'👁️',act:'Phone number viewed',det:'Ravi Kumar viewed Priya Sharma · +91 98765 43210',t:'10:42:18',col:'var(--ia-orange)',bg:'var(--ia-orange-dim)'},{ic:'💾',act:'Call record saved',det:'Ravi Kumar → Arjun Mehta → Callback',t:'10:38:05',col:'var(--ia-green)',bg:'var(--ia-green-dim)'},{ic:'📅',act:'Meeting scheduled',det:'Neha Joshi → Dev Patel · Teams · 22 Apr',t:'10:31:44',col:'var(--ia-blue)',bg:'var(--ia-blue-dim)'},{ic:'👁️',act:'Phone number viewed',det:'Suresh Babu viewed Rekha Iyer',t:'10:28:12',col:'var(--ia-orange)',bg:'var(--ia-orange-dim)'},{ic:'💾',act:'Call record saved',det:'Divya Nair → Kavita Singh → Callback',t:'10:22:55',col:'var(--ia-green)',bg:'var(--ia-green-dim)'},{ic:'🔑',act:'Signed in',det:'neha.joshi@iamaze.in · Session IA-2024-7741',t:'09:58:00',col:'var(--ia-blue)',bg:'var(--ia-blue-dim)'},{ic:'📥',act:'Bulk import',det:'Admin imported 18 leads from Q2_leads.xlsx',t:'09:10:00',col:'var(--ia-green)',bg:'var(--ia-green-dim)'},{ic:'🔑',act:'Signed in',det:'admin@iamaze.in · Session IA-2024-7739',t:'09:05:00',col:'var(--ia-blue)',bg:'var(--ia-blue-dim)'}];
+  document.getElementById('ap-audit').innerHTML=`<div class="card"><div class="card-hdr"><div><div class="card-title">Audit Log</div><div class="card-sub">Every access, call & data event</div></div><button class="ia-btn-ghost" onclick="showToast('Exporting audit log…')">Export log</button></div>${AUDIT.map(a=>`<div class="al-row"><div class="al-ic" style="background:${a.bg}">${a.ic}</div><div style="flex:1;min-width:0"><div class="al-act" style="color:${a.col}">${a.act}</div><div class="al-det">${a.det}</div><div style="font-size:9px;color:var(--text3);font-family:var(--mono);margin-top:1px">Today ${a.t}</div></div></div>`).join('')}</div>`;
+}
+
+// IMPORT
+function setImpMeth(m){document.getElementById('mt-excel').classList.toggle('active',m==='excel');document.getElementById('mt-manual').classList.toggle('active',m==='manual');document.getElementById('excel-section').style.display=m==='excel'?'block':'none';document.getElementById('manual-section').classList.toggle('show',m==='manual');}
+function dlTmpl(){if(typeof XLSX==='undefined'){showToast('Loading…','err');return;}const ws=XLSX.utils.aoa_to_sheet([['Name','Company','Phone','City','M365 Interest','Priority','Email Sent'],['Priya Sharma','Infosys Ltd','+91 98765 43210','Bengaluru','Teams + Exchange','High','Yes']]);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Leads');XLSX.writeFile(wb,'iAmaze_Lead_Template.xlsx');showToast('Template downloaded!');}
+function drgOver(e){e.preventDefault();document.getElementById('drop-zone')?.classList.add('drag');}
+function drgLeave(){document.getElementById('drop-zone')?.classList.remove('drag');}
+function dropF(e){e.preventDefault();document.getElementById('drop-zone')?.classList.remove('drag');const f=e.dataTransfer.files[0];if(f)handleF(f);}
+function handleF(file){if(!file)return;if(!file.name.match(/\.(xlsx|xls|csv)$/i)){showToast('Upload .xlsx or .csv','err');return;}document.getElementById('upload-title').textContent='📄 '+file.name;document.getElementById('upload-sub').textContent=`${(file.size/1024).toFixed(1)} KB`;setStep(2);const reader=new FileReader();reader.onload=e=>{try{const data=new Uint8Array(e.target.result),wb=XLSX.read(data,{type:'array'}),ws=wb.Sheets[wb.SheetNames[0]],json=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});if(json.length<2){showToast('File empty','err');return;}excelHeaders=json[0].map(h=>String(h).trim());parsedRows=json.slice(1).filter(r=>r.some(c=>String(c).trim()!==''));document.getElementById('upload-sub').textContent=`${parsedRows.length} rows found`;showColMap();}catch(err){showToast('Could not read file','err');}};reader.readAsArrayBuffer(file);}
+const AM={'Name':['name','full name'],'Company':['company','org','firm'],'Phone':['phone','mobile','tel'],'City':['city','location'],'M365 Interest':['m365','interest','product'],'Priority':['priority'],'Email Sent':['email sent','email','mail']};
+function showColMap(){document.getElementById('col-map').classList.add('show');function fm(f){const v=AM[f]||[];for(let h of excelHeaders){if(v.some(x=>h.toLowerCase().includes(x)))return h;}return '';}document.getElementById('col-map-rows').innerHTML=['Name','Company','Phone','City','M365 Interest','Priority','Email Sent'].map(col=>{const m=fm(col),req=['Name','Company','Phone'].includes(col),opts=excelHeaders.map(h=>`<option value="${h}" ${h===m?'selected':''}>${h}</option>`).join('');return `<div class="cm-grid"><div class="cm-lbl">${col}${req?'<span style="color:var(--danger);font-size:9px;margin-left:3px">req</span>':''}</div><span style="color:var(--text3);text-align:center">→</span><select class="cm-sel ${m?'matched':'unmatched'}" id="map-${col.replace(/\s/g,'-')}" onchange="this.className='cm-sel matched'"><option value="">— skip —</option>${opts}</select></div>`;}).join('');}
+function applyMap(){const mapping={};['Name','Company','Phone','City','M365 Interest','Priority','Email Sent'].forEach(col=>{const v=document.getElementById('map-'+col.replace(/\s/g,'-'))?.value;if(v)mapping[col]=v;});for(let r of['Name','Company','Phone']){if(!mapping[r]){showToast(`Map required: ${r}`,'err');return;}}const hIdx={};Object.entries(mapping).forEach(([f,h])=>{hIdx[f]=excelHeaders.indexOf(h);});const existing=new Set(allLeads.map(l=>l.phone.replace(/\D/g,'')));parsedRows=parsedRows.map((row,i)=>{const get=f=>hIdx[f]!=null&&hIdx[f]>=0?String(row[hIdx[f]]||'').trim():'';const phone=get('Phone');return{_row:i+2,name:get('Name'),co:get('Company'),phone,city:get('City'),interest:get('M365 Interest'),pri:get('Priority')||'Medium',emailSent:['yes','y','true','1','sent'].includes(get('Email Sent').toLowerCase()),dup:existing.has(phone.replace(/\D/g,''))};}).filter(r=>r.name||r.phone);document.getElementById('col-map').classList.remove('show');showPreview();setStep(3);}
+function showPreview(){document.getElementById('preview-section').classList.add('show');const tot=parsedRows.length,ey=parsedRows.filter(r=>r.emailSent).length,dups=parsedRows.filter(r=>r.dup).length;document.getElementById('preview-stats').innerHTML=`<span class="pstat ps-tot">📊 ${tot} rows</span><span class="pstat ps-em">✓ ${ey} email sent</span><span class="pstat ps-ne">✗ ${tot-ey} not sent</span>${dups?`<span class="pstat ps-dp">⚠ ${dups} dup</span>`:''}`;document.getElementById('preview-body').innerHTML=parsedRows.map((r,i)=>`<tr><td style="color:var(--text3)">${i+1}${r.dup?' <span style="font-size:8px;padding:1px 4px;border-radius:3px;background:var(--danger-dim);color:var(--danger);font-weight:700">DUP</span>':''}</td><td style="font-weight:600;color:var(--ia-blue)">${r.name||'—'}</td><td>${r.co||'—'}</td><td style="font-family:var(--mono);font-size:10px">${r.phone||'—'}</td><td style="color:var(--text3)">${r.city||'—'}</td><td>${r.interest||'—'}</td><td class="${r.pri==='High'?'pri-h':r.pri==='Medium'?'pri-m':'pri-l'}">${r.pri}</td><td>${r.emailSent?'<span class="email-yes">✓</span>':'<span class="email-no">No</span>'}</td></tr>`).join('');}
+function doImport(){const btn=document.getElementById('import-btn');btn.disabled=true;document.getElementById('prog-wrap').classList.add('show');const tc=document.getElementById('bulk-assign').value,valid=parsedRows.filter(r=>!r.dup&&r.name&&r.phone);let i=0;const iv=setInterval(()=>{if(i>=valid.length){clearInterval(iv);document.getElementById('prog-fill').style.width='100%';document.getElementById('prog-txt').textContent='Done!';document.getElementById('prog-pct').textContent='100%';const added=valid.map(r=>({id:nextId++,name:r.name,role:'—',co:r.co,phone:r.phone,city:r.city,interest:r.interest,pri:r.pri,emailSent:r.emailSent,tc:tc||'',status:'New',last:'—',fu:''}));allLeads.push(...added);recentlyAdded=[...added,...recentlyAdded].slice(0,20);showRecent();refreshDash();showToast(`✓ ${added.length} leads imported!`);setTimeout(()=>{clrUpload();document.getElementById('prog-wrap').classList.remove('show');btn.disabled=false;},1500);return;}i++;const pct=Math.round(i/valid.length*100);document.getElementById('prog-fill').style.width=pct+'%';document.getElementById('prog-pct').textContent=pct+'%';},40);}
+function clrUpload(){parsedRows=[];excelHeaders=[];document.getElementById('upload-title').textContent='Drag & drop Excel file here';document.getElementById('upload-sub').textContent='or click to browse · .xlsx .xls .csv';document.getElementById('col-map').classList.remove('show');document.getElementById('preview-section').classList.remove('show');const fi=document.getElementById('file-input');if(fi)fi.value='';setStep(1);}
+function setStep(n){[1,2,3].forEach(i=>{const e=document.getElementById('step'+i);if(e)e.className='step'+(i<n?' done':i===n?' active':'');});}
+function setEml(v){emailSentManual=v;document.getElementById('et-yes').classList.toggle('active',v);document.getElementById('et-no').classList.toggle('active',!v);}
+function addManual(){const name=document.getElementById('m-name').value.trim(),co=document.getElementById('m-co').value.trim(),phone=document.getElementById('m-phone').value.trim();if(!name){document.getElementById('m-name').classList.add('error');showToast('Name required','err');return;}if(!co){document.getElementById('m-co').classList.add('error');showToast('Company required','err');return;}if(!phone){document.getElementById('m-phone').classList.add('error');showToast('Phone required','err');return;}const lead={id:nextId++,name,role:'—',co,phone,city:document.getElementById('m-city').value.trim(),interest:document.getElementById('m-interest').value,pri:document.getElementById('m-pri').value,emailSent:emailSentManual,tc:document.getElementById('m-assign').value,status:'New',last:'—',fu:''};allLeads.push(lead);recentlyAdded=[lead,...recentlyAdded].slice(0,20);showRecent();refreshDash();showToast(`✓ ${name} added`);clrManual();}
+function clrManual(){['m-name','m-co','m-phone','m-city'].forEach(id=>{const e=document.getElementById(id);if(e){e.value='';e.classList.remove('error');}});const mi=document.getElementById('m-interest');if(mi)mi.value='';const mp=document.getElementById('m-pri');if(mp)mp.value='Medium';const ma=document.getElementById('m-assign');if(ma)ma.value='';setEml(true);}
+function showRecent(){const card=document.getElementById('recent-card');if(!card)return;card.style.display='block';const sub=document.getElementById('recent-sub');if(sub)sub.textContent=`${recentlyAdded.length} added this session`;const body=document.getElementById('recent-body');if(!body)return;body.innerHTML=recentlyAdded.map((l,i)=>`<tr><td style="color:var(--text3)">${i+1}</td><td style="font-weight:600;color:var(--ia-blue)">${l.name}</td><td>${l.co}</td><td style="font-family:var(--mono);font-size:10px">${l.phone}</td><td class="${l.pri==='High'?'pri-h':l.pri==='Medium'?'pri-m':'pri-l'}">${l.pri}</td><td>${l.emailSent?'<span class="email-yes">✓</span>':'<span class="email-no">No</span>'}</td><td style="color:var(--text2)">${l.tc||'—'}</td></tr>`).join('');}
+
+// SHARED
+function setPeriod(el){document.querySelectorAll('.panel:not(.hidden) .tf').forEach(e=>e.classList.remove('active'));el.classList.add('active');}
+function openAssign(id){document.getElementById('m-lead').innerHTML=allLeads.map(l=>`<option value="${l.id}"${l.id===id?' selected':''}>${l.name} · ${l.co}</option>`).join('');if(id){const l=allLeads.find(x=>x.id===id);if(l){document.getElementById('m-tc').value=l.tc||'';document.getElementById('m-pri').value=l.pri;}}document.getElementById('modal').classList.add('show');}
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+function saveAssign(){const id=parseInt(document.getElementById('m-lead').value),tc=document.getElementById('m-tc').value,pri=document.getElementById('m-pri').value,l=allLeads.find(x=>x.id===id);if(l){l.tc=tc;l.pri=pri;}closeModal();showToast(`${l?.name} assigned to ${tc}`);renderAdminLeads();refreshDash();}
+function exportCSV(){if(!allLeads.length){showToast('No leads','err');return;}const rows=[['Name','Company','Phone','City','Interest','Priority','Email Sent','Assigned To','Status'],...allLeads.map(l=>[l.name,l.co,l.phone,l.city,l.interest,l.pri,l.emailSent?'Yes':'No',l.tc,l.status])];const csv=rows.map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='iAmaze_Leads.csv';a.click();showToast('CSV exported');}
+function showToast(msg,type){const t=document.getElementById('toast-el');t.textContent=(type==='err'?'⚠ ':'✓ ')+msg;t.className='toast show'+(type==='err'?' err':'');setTimeout(()=>t.className='toast',3200);}
+document.addEventListener('copy',e=>{if(currentRole==='telecaller'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA')e.preventDefault();});
+document.addEventListener('cut',e=>{if(currentRole==='telecaller')e.preventDefault();});
+</script>
+</body>
+</html>
